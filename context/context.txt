@@ -1,0 +1,112 @@
+================================================================================
+                        UofTHacks 2026 - Shopify Track
+                    Universal Commerce Protocol (UCP) Project
+================================================================================
+
+SLOGAN: "Speak it. Cart it. Own it."
+
+================================================================================
+PROBLEM STATEMENT
+================================================================================
+Finding products I want to buy takes too much effort:
+- Look at shipping
+- Ethical issues
+- Personal preferences
+- Sorting through tons of stores and products
+
+================================================================================
+THE IDEA
+================================================================================
+We use UCP (Universal Commerce Protocol) to find potential products that the 
+user wants. "Hey I want to buy shoes" → the agent looks through UCP for items 
+that best match the user query → the agent can fully buy and checkout the product.
+
+================================================================================
+USER FLOW
+================================================================================
+1. User lands on website → Chat Page
+2. User types query into chat bar (e.g., "I want to buy shoes")
+3. Query sent to backend
+4. Agent queries merchant MCP for products
+5. Agent returns results through the endpoint
+6. Display 3-5 products with: price, name, image, store, delivery time, checkbox
+7. User clicks/checks items to "add to cart"
+8. This happens iteratively until user clicks "Checkout"
+9. Cart visualized with price and items (user can remove items)
+10. User authorizes payment
+
+Offshoots: If users are not happy, they can prompt more or generate more items
+
+================================================================================
+BACKEND ENDPOINTS
+================================================================================
+- GET items via query
+- POST purchase items in cart
+- GET/POST generate more items
+- GET retrieve user info
+- PUT user info
+
+================================================================================
+TECH STACK (TO BE DECIDED)
+================================================================================
+Frontend: 
+Backend: 
+Database: 
+AI/Agent: 
+
+================================================================================
+SYSTEM ARCHITECTURE (TO BE DESIGNED)
+================================================================================
+[User] → [Frontend (Chat UI)] → [Backend API] → [Agent/AI Layer] → [UCP/Merchant MCP] → [Backend API again] → [Products]
+                                      
+                              
+
+================================================================================
+DATA SCHEMA (TO BE DEFINED)
+================================================================================
+
+User Schema:
+- id
+- name
+- email
+- preferences (stretch goal)
+- budget (stretch goal)
+
+Product Schema:
+- id
+- name
+- price
+- image_url
+- store
+- delivery_time
+- description
+
+Cart Schema:
+- user_id
+- items[]
+- total_price
+
+================================================================================
+FRIDAY TODO
+================================================================================
+[ ] Define problem, scope, and pitch
+[ ] Decide tech stack
+[ ] Design system architecture
+[ ] Data schema for frontend, backend, UCP
+[ ] Get feedback on the idea from a judge, if possible
+
+================================================================================
+STRETCH GOALS / LOWER PRIORITY FEATURES
+================================================================================
+[ ] User shopping profile (preferences, price budget, appearance)
+[ ] AI-powered visualization (show user wearing clothes via Gemini API)
+[ ] Filters: price tags, color, etc.
+[ ] Smart ranking: show products that best match query/prompt
+
+================================================================================
+NOTES
+================================================================================
+- Target: Shopify Track
+- Using: Universal Commerce Protocol (UCP)
+- UI Sketch: See uploaded image in project files
+
