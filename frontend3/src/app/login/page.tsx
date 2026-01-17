@@ -20,12 +20,15 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 type Step = "welcome" | "photo" | "sizes" | "style" | "values" | "budget" | "complete";
 
 interface UserProfile {
     name: string;
     email: string;
+    password?: string;
     photo: string | null;
     sizes: {
         clothing: string;
@@ -74,7 +77,49 @@ export default function LoginPage() {
         budget: "",
         zipCode: "",
     });
+    const [authMode, setAuthMode] = useState<"signup" | "login">("signup");
+    const [authError, setAuthError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
+
+    const handleAuth = async () => {
+        if (!profile.email || !profile.password) {
+            setAuthError("Email and password are required");
+            return;
+        }
+
+        setIsLoading(true);
+        setAuthError(null);
+
+        try {
+            if (authMode === "signup") {
+                const { error } = await supabase.auth.signUp({
+                    email: profile.email,
+                    password: profile.password,
+                    options: {
+                        data: {
+                            full_name: profile.name,
+                        },
+                    },
+                });
+                if (error) throw error;
+                // Continue with profile creation flow
+                nextStep();
+            } else {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: profile.email,
+                    password: profile.password,
+                });
+                if (error) throw error;
+                router.push("/");
+            }
+        } catch (error: any) {
+            setAuthError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -147,22 +192,28 @@ export default function LoginPage() {
                             className="space-y-6"
                         >
                             <div className="text-center space-y-2">
-                                <h2 className="text-xl font-semibold text-white">Create Your Profile</h2>
+                                <h2 className="text-xl font-semibold text-white">
+                                    {authMode === "signup" ? "Create Your Profile" : "Welcome Back"}
+                                </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Help us find products tailored just for you
+                                    {authMode === "signup"
+                                        ? "Help us find products tailored just for you"
+                                        : "Sign in to access your profile"}
                                 </p>
                             </div>
 
                             <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm text-muted-foreground mb-2 block">Name</label>
-                                    <Input
-                                        placeholder="Your name"
-                                        value={profile.name}
-                                        onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
-                                        className="glass-input h-12"
-                                    />
-                                </div>
+                                {authMode === "signup" && (
+                                    <div>
+                                        <label className="text-sm text-muted-foreground mb-2 block">Name</label>
+                                        <Input
+                                            placeholder="Your name"
+                                            value={profile.name}
+                                            onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
+                                            className="glass-input h-12"
+                                        />
+                                    </div>
+                                )}
                                 <div>
                                     <label className="text-sm text-muted-foreground mb-2 block">Email</label>
                                     <Input
@@ -173,15 +224,48 @@ export default function LoginPage() {
                                         className="glass-input h-12"
                                     />
                                 </div>
+                                <div>
+                                    <label className="text-sm text-muted-foreground mb-2 block">Password</label>
+                                    <Input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={profile.password || ""}
+                                        onChange={(e) => setProfile((prev) => ({ ...prev, password: e.target.value }))}
+                                        className="glass-input h-12"
+                                    />
+                                </div>
                             </div>
 
-                            <Button
-                                onClick={nextStep}
-                                disabled={!profile.name || !profile.email}
-                                className="w-full h-12 bg-primary hover:bg-primary/90 gap-2"
-                            >
-                                Continue <ArrowRight className="h-4 w-4" />
-                            </Button>
+                            {authError && (
+                                <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">
+                                    {authError}
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <Button
+                                    onClick={handleAuth}
+                                    disabled={!profile.email || !profile.password || (authMode === "signup" && !profile.name) || isLoading}
+                                    className="w-full h-12 bg-primary hover:bg-primary/90 gap-2"
+                                >
+                                    {isLoading ? "Processing..." : (authMode === "signup" ? "Continue" : "Log In")}
+                                    {!isLoading && <ArrowRight className="h-4 w-4" />}
+                                </Button>
+                                
+                                <div className="text-center">
+                                    <button
+                                        onClick={() => {
+                                            setAuthMode(authMode === "signup" ? "login" : "signup");
+                                            setAuthError(null);
+                                        }}
+                                        className="text-sm text-muted-foreground hover:text-white transition-colors"
+                                    >
+                                        {authMode === "signup" 
+                                            ? "Already have an account? Log in" 
+                                            : "Don't have an account? Sign up"}
+                                    </button>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
 
