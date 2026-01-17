@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "shopify": {
+      "type": "streamable_http",
+      "url": "https://discover.shopifyapps.com/global/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SHOPIFY_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

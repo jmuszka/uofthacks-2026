@@ -4,6 +4,8 @@ from dto.purchase import PurchaseRequest, PurchaseResponse
 from enums.sort import SortBy
 from time import sleep
 from random import random
+from util import search_products
+import json
 
 app = FastAPI()
 
@@ -14,15 +16,16 @@ def read_root():
 
 # Search for items via the Shopify Catalog MCP Server
 @app.get("/search")
-def search(
+async def search(
     req: SearchRequest,
     limit: int = Query(default=10, ge=1, le=100),
     sort_order: str = Query(default=SortBy.RELEVANCE)
 ):
+    
+    res = await search_products(req.query)
+
     return {
-            "message": req.query,
-            "limit": limit,
-            "sort_order": sort_order
+            "items": json.dumps(json.loads(res), separators=(',', ':'))
     }
 
 
