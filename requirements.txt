@@ -1,0 +1,42 @@
+# UofThacks 2026 - Backend & Agent Requirements
+# Python 3.13+ required
+# Install with: pip install -r requirements.txt
+
+# ===========================================
+# Backend (FastAPI Server)
+# ===========================================
+fastapi>=0.128.0
+uvicorn>=0.40.0
+pydantic>=2.0.0
+
+# ===========================================
+# Agent (MCP + LangGraph + Gemini/OpenAI)
+# ===========================================
+# LangChain & LangGraph
+langgraph>=0.2.0
+langchain-core>=0.3.0
+langchain-openai>=0.3.0
+langchain-google-genai>=2.0.0
+
+# MCP (Model Context Protocol)
+mcp>=1.0.0
+httpx-sse>=0.4.0
+
+# Environment & Utilities
+python-dotenv>=1.0.0
+httpx>=0.28.0
+
+# ===========================================
+# Optional: Development & Testing
+# ===========================================
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+
+# ===========================================
+# Installation Commands:
+# ===========================================
+# Backend:   cd backend && uv pip install -r ../requirements.txt
+# Agent:     cd agent && pip install -r ../requirements.txt
+#
+# Or with uv:
+# uv pip install -r requirements.txt
