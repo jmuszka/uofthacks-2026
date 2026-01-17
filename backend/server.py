@@ -15,6 +15,33 @@ class CheckoutRequest(BaseModel):
     store_domain: str
     access_token: str | None = None
 
+# Search for items via the Shopify Catalog MCP Server
+@app.get("/search")
+async def search(
+    req: SearchRequest,
+    limit: int = Query(default=10, ge=1, le=100),
+    sort_order: str = Query(default=SortBy.RELEVANCE)
+):
+    
+    res = await search_products(req.query)
+
+    return {
+            "items": json.dumps(json.loads(res), separators=(',', ':'))
+    }
+
+# Purchase specified items
+@app.post("/purchase", response_model=PurchaseResponse)
+def purchase(req: PurchaseRequest):
+    res = PurchaseResponse(purchases = [])
+    
+    for item in req.items:
+        # Mock purchasing 
+        # TODO: use UCP to genuinely purchase items using a credit provider
+        sleep(random())
+        res.add(item, True)
+
+    return res
+
 def validate_token(store_domain: str, token: str) -> bool:
     """Checks if a token is valid by making a lightweight query."""
     try:
