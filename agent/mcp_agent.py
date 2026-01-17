@@ -10,7 +10,7 @@ Prerequisites:
 
 import asyncio
 import os
-from typing import Annotated, TypedDict, Literal
+from typing import Annotated, TypedDict, Literal, Optional
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
@@ -58,6 +58,7 @@ class MCPLangGraphAgent:
         await self.mcp_client.connect()
 
         # Convert MCP tools to LangChain tools
+        # 2. Convert MCP tools to LangChain tools
         await self._create_langchain_tools()
 
         # Initialize Gemini via native Google integration
@@ -76,6 +77,8 @@ class MCPLangGraphAgent:
         self._build_graph()
 
         print(f"Agent initialized with {len(self.tools)} tools from MCP servers")
+
+
 
     async def _create_langchain_tools(self) -> None:
         """Convert MCP tools to LangChain StructuredTools with corrected Pydantic schemas."""
