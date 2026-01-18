@@ -18,9 +18,10 @@ interface CheckoutProps {
     onClose: () => void;
     items: Product[];
     onConfirm: () => void;
+    isLoading?: boolean;
 }
 
-export function Checkout({ isOpen, onClose, items, onConfirm }: CheckoutProps) {
+export function Checkout({ isOpen, onClose, items, onConfirm, isLoading = false }: CheckoutProps) {
     const total = items.reduce((sum, item) => sum + item.price, 0);
 
     return (
@@ -78,16 +79,22 @@ export function Checkout({ isOpen, onClose, items, onConfirm }: CheckoutProps) {
                     <Button
                         variant="outline"
                         onClick={onClose}
+                        disabled={isLoading}
                         className="flex-1 border-white/10 hover:bg-white/5"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={onConfirm}
+                        disabled={isLoading}
                         className="flex-1 bg-primary hover:bg-primary/90 hover:glow-primary gap-2"
                     >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Confirm
+                        {isLoading ? (
+                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        {isLoading ? "Processing..." : "Confirm"}
                     </Button>
                 </div>
             </DialogContent>
@@ -95,12 +102,20 @@ export function Checkout({ isOpen, onClose, items, onConfirm }: CheckoutProps) {
     );
 }
 
+export interface CheckoutResponse {
+    store: string;
+    checkout_url: string;
+    item_count: number;
+    error?: string;
+}
+
 interface OrderSuccessProps {
     isOpen: boolean;
     onClose: () => void;
+    checkouts: CheckoutResponse[];
 }
 
-export function OrderSuccess({ isOpen, onClose }: OrderSuccessProps) {
+export function OrderSuccess({ isOpen, onClose, checkouts }: OrderSuccessProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-md glass-card border-white/10 bg-[#0a0a0f]/95 text-center">
@@ -110,12 +125,7 @@ export function OrderSuccess({ isOpen, onClose }: OrderSuccessProps) {
                     className="flex flex-col items-center gap-6 py-8"
                 >
                     {/* Success Icon */}
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", delay: 0.2 }}
-                        className="relative"
-                    >
+                    <div className="relative">
                         <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
                             <CheckCircle2 className="h-12 w-12 text-primary" />
                         </div>
@@ -127,20 +137,43 @@ export function OrderSuccess({ isOpen, onClose }: OrderSuccessProps) {
                         >
                             <Sparkles className="h-8 w-8 text-accent" />
                         </motion.div>
-                    </motion.div>
+                    </div>
 
                     {/* Text */}
                     <div>
-                        <h2 className="text-2xl font-bold text-white">Order Confirmed!</h2>
+                        <h2 className="text-2xl font-bold text-white">Ready to Checkout!</h2>
                         <p className="text-muted-foreground mt-2">
-                            Thank you for your purchase. Your order is on its way!
+                            We've prepared your carts. Please complete your purchase at each store:
                         </p>
+                    </div>
+
+                    {/* Checkout Links */}
+                    <div className="w-full space-y-3 mt-2">
+                        {checkouts.map((checkout, idx) => (
+                            <div key={idx} className="glass p-3 rounded-xl flex items-center justify-between">
+                                <div className="text-left">
+                                    <p className="text-sm font-medium text-white">{checkout.store}</p>
+                                    <p className="text-xs text-muted-foreground">{checkout.item_count} items</p>
+                                    {checkout.error && <p className="text-xs text-red-400 max-w-[200px] truncate">{checkout.error}</p>}
+                                </div>
+                                {checkout.checkout_url && (
+                                    <Button
+                                        size="sm"
+                                        className="bg-primary text-xs"
+                                        onClick={() => window.open(checkout.checkout_url, '_blank')}
+                                    >
+                                        Pay Now
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
                     </div>
 
                     {/* Button */}
                     <Button
                         onClick={onClose}
-                        className="mt-2 bg-primary hover:bg-primary/90 hover:glow-primary"
+                        variant="ghost"
+                        className="mt-2 text-muted-foreground hover:text-white"
                     >
                         Continue Shopping
                     </Button>

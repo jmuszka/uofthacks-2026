@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChatInput } from "@/components/ChatInput";
 import { ProductGrid } from "@/components/ProductGrid";
 import { Cart } from "@/components/Cart";
-import { Checkout, OrderSuccess } from "@/components/Checkout";
+import { Checkout, OrderSuccess, CheckoutResponse } from "@/components/Checkout";
 import { FloatingChat } from "@/components/FloatingChat";
 import { SideBarChat } from "@/components/SideBarChat";
 import { Recommendations } from "@/components/Recommendations";
@@ -29,7 +29,9 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [checkouts, setCheckouts] = useState<CheckoutResponse[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
 
@@ -62,7 +64,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setIsLoading(false)
-  }, [products]) 
+  }, [products])
 
   const handleSearch = async (query: string) => {
     console.log("bruh")
@@ -81,19 +83,19 @@ export default function HomePage() {
         'query': query
       })
     })
-    .then(res => res.json())
-    .then(data => JSON.parse(data.items).map((product): Product => {
-      return {
-        id: crypto.randomUUID(),
-        name: product["name"],
-        price: product["price"],
-        image: product["image_url"],
-        store: product["link"],
-        deliveryTime: "unknown",
-        description: product["description"],
-      }
-    }))
-    .then(data => {setProducts(data)})
+      .then(res => res.json())
+      .then(data => JSON.parse(data.items).map((product: any): Product => {
+        return {
+          id: product["id"],
+          name: product["title"],
+          price: product["price"],
+          image: product["image_url"],
+          store: product["url"],
+          deliveryTime: "3-5 days",
+          description: product["description"],
+        }
+      }))
+      .then(data => { setProducts(data) })
 
     // Mock: return random 4-6 products
     // const shuffled = [...mockProducts].sort(() => 0.5 - Math.random());
@@ -150,14 +152,58 @@ export default function HomePage() {
     setIsCheckoutOpen(true);
   };
 
-  const handleConfirmPurchase = () => {
-    setIsCheckoutOpen(false);
-    setIsSuccessOpen(true);
-    setSelectedProducts([]);
-    setProducts([]);
-    setRecommendations([]);
-    setHasSearched(false);
-    setCurrentQuery("");
+  const handleConfirmPurchase = async () => {
+    setIsCheckingOut(true);
+
+    // Construct payload
+    const items = selectedProducts.map(p => {
+      let domain = "";
+      try {
+        const url = new URL(p.store);
+        domain = url.hostname;
+      } catch (e) {
+        console.error("Invalid URL", p.store);
+      }
+
+      // Extract variant from URL query if possible, otherwise use ID
+      let variantId = p.id;
+      try {
+        const url = new URL(p.store);
+        const v = url.searchParams.get("variant");
+        if (v) variantId = v;
+      } catch (e) { }
+
+      return {
+        variant_id: variantId,
+        quantity: 1,
+        store_domain: domain
+      };
+    });
+
+    try {
+      const res = await fetch("http://localhost:8080/checkout", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+      const data = await res.json();
+
+      if (data.checkouts) {
+        setCheckouts(data.checkouts);
+        setIsCheckoutOpen(false);
+        setIsSuccessOpen(true);
+        setSelectedProducts([]); // Clear cart
+        // setProducts([]); // Maybe keep results?
+        // setRecommendations([]);
+        // setHasSearched(false);
+        // setCurrentQuery("");
+      }
+    } catch (e) {
+      console.error("Checkout failed", e);
+      // Show error toast?
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   const handleChatMessage = (message: string) => {
@@ -178,10 +224,9 @@ export default function HomePage() {
       )}
 
       {/* Header */}
-      <header 
-        className={`fixed top-0 right-0 z-50 transition-all duration-300 ${
-          hasSearched ? "left-80" : "left-0"
-        }`}
+      <header
+        className={`fixed top-0 right-0 z-50 transition-all duration-300 ${hasSearched ? "left-80" : "left-0"
+          }`}
       >
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           {/* Top Left: Logo (Trovato Text) - Clickable to go home */}
@@ -227,10 +272,9 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main 
-        className={`container mx-auto px-6 pt-24 pb-32 transition-all duration-300 ${
-          hasSearched ? "ml-80 w-[calc(100%-20rem)]" : ""
-        }`}
+      <main
+        className={`container mx-auto px-6 pt-24 pb-32 transition-all duration-300 ${hasSearched ? "ml-80 w-[calc(100%-20rem)]" : ""
+          }`}
       >
         {/* Hero / Welcome Section */}
         <AnimatePresence mode="wait">
@@ -255,7 +299,7 @@ export default function HomePage() {
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground">
-                  Speak it. Cart it. Own it.
+                  Think it. Cart it. Own it.
                 </p>
               </motion.div>
 
@@ -371,12 +415,14 @@ export default function HomePage() {
         onClose={() => setIsCheckoutOpen(false)}
         items={selectedProducts}
         onConfirm={handleConfirmPurchase}
+        isLoading={isCheckingOut}
       />
 
       {/* Success Modal */}
       <OrderSuccess
         isOpen={isSuccessOpen}
         onClose={() => setIsSuccessOpen(false)}
+        checkouts={checkouts}
       />
     </div>
   );

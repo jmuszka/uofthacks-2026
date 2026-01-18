@@ -68,7 +68,7 @@ class MCPLangGraphAgent:
             model="llama-3.1-8b-instant",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0,
-            max_tokens=10000,
+            max_tokens=8000,
         )
         # Bind tools to the model
         if self.tools:
