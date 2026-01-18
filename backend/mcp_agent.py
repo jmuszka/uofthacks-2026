@@ -13,8 +13,10 @@ import os, sys
 from typing import Annotated, TypedDict, Literal, Optional
 from dotenv import load_dotenv
 
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+from langchain_groq import ChatGroq
+
+
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage, BaseMessage
 from langchain_core.tools import tool, StructuredTool
 from langgraph.graph import StateGraph, END
@@ -61,14 +63,13 @@ class MCPLangGraphAgent:
         # 2. Convert MCP tools to LangChain tools
         await self._create_langchain_tools()
 
-        # Initialize Cerebras (via OpenAI compatible interface)
-        self.model = ChatOpenAI(
-            model="llama-3.3-70b",
-            base_url="https://api.cerebras.ai/v1",
-            api_key=os.getenv("CEREBRAS_API_KEY"),
+        # Initialize Groq (Llama 3.1 8B for speed and TPM limits)
+        self.model = ChatGroq(
+            model="llama-3.1-8b-instant",
+            api_key=os.getenv("GROQ_API_KEY"),
             temperature=0,
+            max_tokens=1024,
         )
-
         # Bind tools to the model
         if self.tools:
             self.model = self.model.bind_tools(self.tools)
@@ -250,29 +251,7 @@ class MCPLangGraphAgent:
             messages = state["messages"]
             response = await self.model.ainvoke(messages)
             
-            # --- CEREBRAS/LLAMA COMPATIBILITY PATCH ---
-            if not response.tool_calls and response.content:
-                content = response.content.strip()
-                if content.startswith('{"type": "function"') and "parameters" in content:
-                    try:
-                        data = json.loads(content)
-                        if data.get("type") == "function":
-                            tool_name = data.get("name")
-                            tool_args = data.get("parameters", {})
-                            
-                            # Create a valid LangChain ToolCall
-                            tool_call = {
-                                "name": tool_name,
-                                "args": tool_args,
-                                "id": f"call_{uuid.uuid4().hex[:8]}"
-                            }
-                            
-                            # Inject into message
-                            response.tool_calls = [tool_call]
-                            response.content = "" 
-                    except Exception:
-                        pass # Ignore parsing errors on best-effort basis
-            # ------------------------------------------
+
 
             return {"messages": [response]}
 

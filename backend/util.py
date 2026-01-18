@@ -39,7 +39,6 @@ Be concise but helpful. Keep your response in the JSON format for easy parsing. 
 async def search_products(agent: MCPLangGraphAgent, query: str, user_id: str = "") -> str:
     """Run a single product search query through the agent."""
     history = get_search_history(user_id)
-    print(history)
     prompt = f"{SYSTEM_PROMPT}\n\nUser query: {query}"
 
     if history:
@@ -47,7 +46,9 @@ async def search_products(agent: MCPLangGraphAgent, query: str, user_id: str = "
         history_str = "\n".join([f"- {h}" for h in history])
         prompt += f"\n\nRecent Search History:\n{history_str}\n\nUse this history to better understand the user's preferences if relevant."
 
-    print(f"[*] Searching for: {prompt}\n")
+    print(f"[*] Searching for: {query}\n")
+    
+    prompt += "\n\nIMMEDIATE INSTRUCTION: Call the search_global_products tool immediately. Do not talk. Output the tool call JSON directly."
 
     return await agent.chat(prompt, thread_id=f"product_search:{hash(query)}")
 
