@@ -37,32 +37,21 @@ interface UserProfile {
         fit: string;
     };
     style: string[];
+    customStyle: string;
     values: string[];
-    budget: string;
+    customValue: string;
+    budget: number;
     zipCode: string;
 }
 
 const styleOptions = [
     { id: "streetwear", label: "Streetwear", emoji: "🔥" },
     { id: "minimalist", label: "Minimalist", emoji: "⚪" },
-    { id: "old-money", label: "Old Money", emoji: "💎" },
-    { id: "gorpcore", label: "Gorpcore", emoji: "🏔️" },
-    { id: "casual", label: "Casual", emoji: "👕" },
-    { id: "formal", label: "Formal", emoji: "👔" },
 ];
 
 const valueOptions = [
-    { id: "eco-friendly", label: "Eco-Friendly" },
-    { id: "vegan", label: "Vegan / Cruelty-Free" },
     { id: "local", label: "Made Locally" },
-    { id: "minority-owned", label: "Minority-Owned" },
-    { id: "carbon-neutral", label: "Carbon Neutral" },
-];
-
-const budgetOptions = [
-    { id: "budget", label: "Budget-Friendly", description: "Best value for money", emoji: "💵" },
-    { id: "mid", label: "Mid-Range", description: "Quality meets price", emoji: "💳" },
-    { id: "luxury", label: "Luxury", description: "Premium products", emoji: "💎" },
+    { id: "eco-friendly", label: "Eco-Friendly" },
 ];
 
 export default function LoginPage() {
@@ -73,8 +62,10 @@ export default function LoginPage() {
         photo: null,
         sizes: { clothing: "", waist: "", shoe: "", fit: "" },
         style: [],
+        customStyle: "",
         values: [],
-        budget: "",
+        customValue: "",
+        budget: 50,
         zipCode: "",
     });
     const [authMode, setAuthMode] = useState<"signup" | "login">("signup");
@@ -176,7 +167,6 @@ export default function LoginPage() {
                 {/* Header */}
                 <div className="text-center space-y-2">
                     <Link href="/" className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Image src="/logo1.png" alt="Trovato" width={48} height={48} className="rounded-lg" />
                         <span className="text-2xl font-bold text-white">Trovato</span>
                     </Link>
                 </div>
@@ -251,7 +241,7 @@ export default function LoginPage() {
                                     {isLoading ? "Processing..." : (authMode === "signup" ? "Continue" : "Log In")}
                                     {!isLoading && <ArrowRight className="h-4 w-4" />}
                                 </Button>
-                                
+
                                 <div className="text-center">
                                     <button
                                         onClick={() => {
@@ -260,8 +250,8 @@ export default function LoginPage() {
                                         }}
                                         className="text-sm text-muted-foreground hover:text-white transition-colors"
                                     >
-                                        {authMode === "signup" 
-                                            ? "Already have an account? Log in" 
+                                        {authMode === "signup"
+                                            ? "Already have an account? Log in"
                                             : "Don't have an account? Sign up"}
                                     </button>
                                 </div>
@@ -385,15 +375,16 @@ export default function LoginPage() {
                                                 ...prev,
                                                 sizes: { ...prev.sizes, clothing: e.target.value }
                                             }))}
-                                            className="w-full h-10 px-3 rounded-lg glass-input text-white text-sm"
+                                            className="w-full h-10 px-3 rounded-lg glass-input text-white text-sm bg-[#1a1a2e] border border-white/10 appearance-none cursor-pointer"
+                                            style={{ backgroundColor: '#1a1a2e' }}
                                         >
-                                            <option value="">Select</option>
-                                            <option value="XS">XS</option>
-                                            <option value="S">S</option>
-                                            <option value="M">M</option>
-                                            <option value="L">L</option>
-                                            <option value="XL">XL</option>
-                                            <option value="XXL">XXL</option>
+                                            <option value="" className="bg-[#1a1a2e] text-white">Select</option>
+                                            <option value="XS" className="bg-[#1a1a2e] text-white">XS</option>
+                                            <option value="S" className="bg-[#1a1a2e] text-white">S</option>
+                                            <option value="M" className="bg-[#1a1a2e] text-white">M</option>
+                                            <option value="L" className="bg-[#1a1a2e] text-white">L</option>
+                                            <option value="XL" className="bg-[#1a1a2e] text-white">XL</option>
+                                            <option value="XXL" className="bg-[#1a1a2e] text-white">XXL</option>
                                         </select>
                                     </div>
                                     <div>
@@ -474,6 +465,19 @@ export default function LoginPage() {
                                 ))}
                             </div>
 
+                            {/* Custom style input */}
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-2 block">Other style (optional)</label>
+                                <Input
+                                    placeholder="Describe your style..."
+                                    value={profile.customStyle}
+                                    onChange={(e) => setProfile((prev) => ({ ...prev, customStyle: e.target.value.slice(0, 20) }))}
+                                    maxLength={20}
+                                    className="glass-input h-10"
+                                />
+                                <span className="text-xs text-muted-foreground">{profile.customStyle.length}/20</span>
+                            </div>
+
                             <div className="flex gap-3">
                                 <Button variant="outline" onClick={prevStep} className="flex-1 glass border-white/10">
                                     <ArrowLeft className="h-4 w-4 mr-2" /> Back
@@ -508,14 +512,27 @@ export default function LoginPage() {
                                         key={value.id}
                                         onClick={() => handleValueToggle(value.id)}
                                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${profile.values.includes(value.id)
-                                                ? "glass ring-2 ring-primary"
-                                                : "glass border-white/10 hover:bg-white/5"
+                                            ? "glass ring-2 ring-primary"
+                                            : "glass border-white/10 hover:bg-white/5"
                                             }`}
                                     >
                                         <Checkbox checked={profile.values.includes(value.id)} />
                                         <span className="text-sm text-white">{value.label}</span>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Custom value input */}
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-2 block">Other value (optional)</label>
+                                <Input
+                                    placeholder="What else matters to you..."
+                                    value={profile.customValue}
+                                    onChange={(e) => setProfile((prev) => ({ ...prev, customValue: e.target.value.slice(0, 20) }))}
+                                    maxLength={20}
+                                    className="glass-input h-10"
+                                />
+                                <span className="text-xs text-muted-foreground">{profile.customValue.length}/20</span>
                             </div>
 
                             <div className="flex gap-3">
@@ -547,23 +564,27 @@ export default function LoginPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <div className="space-y-3">
-                                    {budgetOptions.map((option) => (
-                                        <div
-                                            key={option.id}
-                                            onClick={() => setProfile((prev) => ({ ...prev, budget: option.id }))}
-                                            className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${profile.budget === option.id
-                                                    ? "glass ring-2 ring-primary glow-primary"
-                                                    : "glass border-white/10 hover:bg-white/5"
-                                                }`}
-                                        >
-                                            <span className="text-2xl">{option.emoji}</span>
-                                            <div>
-                                                <div className="font-medium text-white">{option.label}</div>
-                                                <div className="text-xs text-muted-foreground">{option.description}</div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>💵 Budget</span>
+                                        <span>💎 Luxury</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={profile.budget}
+                                        onChange={(e) => setProfile((prev) => ({ ...prev, budget: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        style={{
+                                            background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${profile.budget}%, rgba(255,255,255,0.1) ${profile.budget}%, rgba(255,255,255,0.1) 100%)`
+                                        }}
+                                    />
+                                    <div className="text-center">
+                                        <span className="text-sm text-white font-medium">
+                                            {profile.budget <= 33 ? "Budget-Friendly" : profile.budget <= 66 ? "Mid-Range" : "Luxury"}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div>

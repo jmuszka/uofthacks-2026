@@ -9,7 +9,7 @@ Prerequisites:
 """
 
 import asyncio
-import os
+import os, sys
 from typing import Annotated, TypedDict, Literal, Optional
 from dotenv import load_dotenv
 
@@ -120,7 +120,11 @@ class MCPLangGraphAgent:
                         
                         # Execute tool
                         result = await self.mcp_client.call_tool(name, final_args)
-
+                        
+                        if result.content[0].text == "You are not authorized to use this tool":
+                            print("Shopify hates you (get new token)")
+                            sys.exit(1)
+                        
                         # Handle result content
                         if hasattr(result, 'content'):
                             contents = []
@@ -232,13 +236,15 @@ class MCPLangGraphAgent:
 
     def _build_graph(self) -> None:
         """Build the LangGraph agent graph."""
-        
+        print("Build the LangGraph agent graph.")
+
         # Define the agent node
         async def agent_node(state: AgentState) -> dict:
             """The agent decides what to do based on the current state."""
             import json
             import uuid
-            
+    
+            print("graph.ainvoke")
             messages = state["messages"]
             response = await self.model.ainvoke(messages)
             
@@ -273,6 +279,14 @@ class MCPLangGraphAgent:
             """Determine if we should continue to tools or end."""
             messages = state["messages"]
             last_message = messages[-1]
+            
+            print()
+            print()
+            print()
+            print(messages[-1])
+            print()
+            print()
+            print()
 
             # If the LLM made a tool call, route to tools
             if hasattr(last_message, "tool_calls") and last_message.tool_calls:
@@ -334,11 +348,13 @@ class MCPLangGraphAgent:
             "   - 'id' should be the product's global ID (e.g. gid://shopify/Product/...) or the ID of its first variant.\n"
             "5. Output ONLY the JSON. Do not add conversational text."
         )
-        
+       
+        print("INVOKING")
         result = await self.graph.ainvoke(
             {"messages": [SystemMessage(content=system_prompt), HumanMessage(content=message)]},
             config=config
         )
+        print(result)
 
         # Get the last AI message
         for msg in reversed(result["messages"]):
