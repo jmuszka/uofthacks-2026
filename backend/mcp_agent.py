@@ -10,7 +10,7 @@ Prerequisites:
 
 import asyncio
 import os
-from typing import Annotated, TypedDict, Literal
+from typing import Annotated, TypedDict, Literal, Optional
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
@@ -58,13 +58,14 @@ class MCPLangGraphAgent:
         await self.mcp_client.connect()
 
         # Convert MCP tools to LangChain tools
+        # 2. Convert MCP tools to LangChain tools
         await self._create_langchain_tools()
 
-        # Initialize Gemini via native Google integration
-        # Initialize OpenAI (GPT-4o)
+        # Initialize Cerebras (via OpenAI compatible interface)
         self.model = ChatOpenAI(
-            model="gpt-4o",
-            api_key=os.getenv("OPENAI_API_KEY"),
+            model="llama-3.3-70b",
+            base_url="https://api.cerebras.ai/v1",
+            api_key=os.getenv("CEREBRAS_API_KEY"),
             temperature=0,
         )
 
@@ -76,6 +77,8 @@ class MCPLangGraphAgent:
         self._build_graph()
 
         print(f"Agent initialized with {len(self.tools)} tools from MCP servers")
+
+
 
     async def _create_langchain_tools(self) -> None:
         """Convert MCP tools to LangChain StructuredTools with corrected Pydantic schemas."""
@@ -234,8 +237,41 @@ class MCPLangGraphAgent:
         # Define the agent node
         async def agent_node(state: AgentState) -> dict:
             """The agent decides what to do based on the current state."""
+            import json
+            import uuid
+            
             messages = state["messages"]
             response = await self.model.ainvoke(messages)
+            
+            # --- CEREBRAS/LLAMA COMPATIBILITY PATCH ---
+            # If the model outputs raw JSON describing a function call instead of a native tool_call,
+            # we manually parse it and inject it as a tool_call.
+            if not response.tool_calls and response.content:
+                content = response.content.strip()
+                # Check for the specific pattern seen in logs
+                if content.startswith('{"type": "function"') and "parameters" in content:
+                    try:
+                        print(f"🔧 Detected raw JSON tool call in content. Parsing manually...")
+                        data = json.loads(content)
+                        if data.get("type") == "function":
+                            tool_name = data.get("name")
+                            tool_args = data.get("parameters", {})
+                            
+                            # Create a valid LangChain ToolCall
+                            tool_call = {
+                                "name": tool_name,
+                                "args": tool_args,
+                                "id": f"call_{uuid.uuid4().hex[:8]}"
+                            }
+                            
+                            # Inject into message
+                            response.tool_calls = [tool_call]
+                            response.content = "" # Clear content to prevent double Printing
+                            print(f"✅ Converted to tool_call: {tool_name}")
+                    except Exception as e:
+                        print(f"⚠️ Failed to parse raw tool call: {e}")
+            # ------------------------------------------
+
             return {"messages": [response]}
 
         # Define the should_continue function
