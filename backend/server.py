@@ -1,13 +1,33 @@
 import os
 import requests
 import re
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from enums.sort import SortBy 
+from dto.search import SearchRequest 
+from dto.purchase import PurchaseRequest, PurchaseResponse
+from util import search_products
+import json
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI()
+
+# Define which origins (frontends) are allowed
+origins = [
+    "http://localhost:3000", # Your React/Vue/Svelte dev server
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # Allow these specific ports
+    allow_credentials=True,
+    allow_methods=["*"],         # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],         # Allow all headers
+)
 
 class CheckoutRequest(BaseModel):
     variant_id: str
@@ -16,7 +36,7 @@ class CheckoutRequest(BaseModel):
     access_token: str | None = None
 
 # Search for items via the Shopify Catalog MCP Server
-@app.get("/search")
+@app.post("/search")
 async def search(
     req: SearchRequest,
     limit: int = Query(default=10, ge=1, le=100),
@@ -24,6 +44,8 @@ async def search(
 ):
     
     res = await search_products(req.query)
+
+    print(f"DEBUG: Result type is {type(res)}")
 
     return {
             "items": json.dumps(json.loads(res), separators=(',', ':'))
@@ -144,4 +166,4 @@ async def create_checkout(request: CheckoutRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("server:app", host="0.0.0.0", port=8080, reload=True)

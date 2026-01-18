@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChatInput } from "@/components/ChatInput";
 import { ProductGrid } from "@/components/ProductGrid";
 import { Cart } from "@/components/Cart";
@@ -34,22 +34,49 @@ export default function HomePage() {
     setSortBy("relevance");
   };
 
+  useEffect(() => {
+    setIsLoading(false)
+  }, [products]) 
+
   const handleSearch = async (query: string) => {
+    console.log("bruh")
+
     setIsLoading(true);
     setHasSearched(true);
     setCurrentQuery(query);
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    // Retrieve products from backend
+    fetch("http://localhost:8080/search", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'query': query
+      })
+    })
+    .then(res => res.json())
+    .then(data => JSON.parse(data.items).map((product): Product => {
+      return {
+        id: crypto.randomUUID(),
+        name: product["name"],
+        price: Number(product["price"]),
+        image: "url",
+        store: product["link"],
+        deliveryTime: "unknown",
+        description: product["description"],
+      }
+    }))
+    .then(data => {setProducts(data)})
 
     // Mock: return random 4-6 products
-    const shuffled = [...mockProducts].sort(() => 0.5 - Math.random());
-    const count = Math.floor(Math.random() * 3) + 4;
-    setProducts(shuffled.slice(0, count));
+    // const shuffled = [...mockProducts].sort(() => 0.5 - Math.random());
+    // const count = Math.floor(Math.random() * 3) + 4;
+    // setProducts(shuffled.slice(0, count));
 
     // Mock recommendations (remaining products)
-    setRecommendations(shuffled.slice(count, count + 4));
-    setIsLoading(false);
+    // setRecommendations(shuffled.slice(count, count + 4));
+    // setIsLoading(false);
   };
 
   // Sort products based on current sort option

@@ -63,7 +63,7 @@ class MCPLangGraphAgent:
         # Initialize Gemini via native Google integration
         # Initialize OpenAI (GPT-4o)
         self.model = ChatOpenAI(
-            model="gpt-4o",
+            model="gpt-5-mini",
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0,
         )
