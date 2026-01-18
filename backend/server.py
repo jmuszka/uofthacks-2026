@@ -9,6 +9,7 @@ from dto.search import SearchRequest
 from dto.purchase import PurchaseRequest, PurchaseResponse
 from util import search_products
 from database import add_search_history
+from profile_router import router as profile_router
 from time import sleep
 from random import random
 import json
@@ -87,6 +88,9 @@ app.add_middleware(
     allow_methods=["*"],         # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],         # Allow all headers
 )
+
+# Include profile routes
+app.include_router(profile_router)
 
 class CheckoutRequest(BaseModel):
     variant_id: str | int
