@@ -32,6 +32,7 @@ export default function HomePage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [checkouts, setCheckouts] = useState<CheckoutResponse[]>([]);
+  const [lastAgentResponse, setLastAgentResponse] = useState("");
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
 
@@ -84,17 +85,27 @@ export default function HomePage() {
       })
     })
       .then(res => res.json())
-      .then(data => JSON.parse(data.items).map((product: any): Product => {
-        return {
-          id: product["id"],
-          name: product["title"],
-          price: (typeof product["price"] === 'number' ? product["price"] : parseFloat(product["price"])) / 100,
-          image: product["image_url"],
-          store: product["url"],
-          deliveryTime: "3-5 days",
-          description: product["description"],
+      .then(data => {
+        if (data.agent_response) {
+          setLastAgentResponse(data.agent_response);
         }
-      }))
+        return JSON.parse(data.items).map((product: any): Product => {
+          let domain = product["url"];
+          try {
+            domain = new URL(product["url"]).hostname.replace('www.', '');
+          } catch (e) { }
+
+          return {
+            id: product["id"],
+            name: product["title"],
+            price: (typeof product["price"] === 'number' ? product["price"] : parseFloat(product["price"])) / 100,
+            image: product["image_url"],
+            store: domain,
+            deliveryTime: "3-5 days",
+            description: product["description"],
+          }
+        })
+      })
       .then(data => { setProducts(data) })
 
     // Mock: return random 4-6 products

@@ -26,10 +26,24 @@ export function SideBarChat({ onSendMessage, isLoading = false, initialQuery }: 
         if (initialQuery && messages.length === 0) {
             setMessages([
                 { role: "user", text: initialQuery },
-                { role: "agent", text: "Based on your request, we've found these items. Need help refining your search? Just ask!" }
+                { role: "agent", text: `Searching for "${initialQuery}"...` }
             ]);
         }
     }, [initialQuery, messages.length]);
+
+    // Handle incoming agent responses - REMOVED per user request
+    // We now only show "Searching for..." immediately upon send
+    /*
+    useEffect(() => {
+        if (agentResponse) {
+            setMessages((prev) => {
+                const lastMsg = prev[prev.length - 1];
+                if (lastMsg?.role === "agent" && lastMsg.text === agentResponse) return prev;
+                return [...prev, { role: "agent", text: agentResponse }];
+            });
+        }
+    }, [agentResponse]);
+    */
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -43,16 +57,15 @@ export function SideBarChat({ onSendMessage, isLoading = false, initialQuery }: 
             setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
             setMessage("");
 
+            // Add static "Searching for..." message
+            setTimeout(() => {
+                setMessages((prev) => [...prev, { role: "agent", text: `Searching for "${userMessage}"...` }]);
+            }, 100);
+
             // Trigger search
             onSendMessage(userMessage);
 
-            // Simulate agent response (will be replaced with Gemini API)
-            setTimeout(() => {
-                setMessages((prev) => [
-                    ...prev,
-                    { role: "agent", text: "Got it! I'm updating the results based on your preferences..." }
-                ]);
-            }, 1000);
+            // Simulation removed - waiting for agentResponse prop update
         }
     };
 
@@ -74,8 +87,8 @@ export function SideBarChat({ onSendMessage, isLoading = false, initialQuery }: 
                         >
                             {/* Avatar */}
                             <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${msg.role === "user"
-                                    ? "bg-accent/20"
-                                    : "bg-primary/20"
+                                ? "bg-accent/20"
+                                : "bg-primary/20"
                                 }`}>
                                 {msg.role === "user" ? (
                                     <User className="h-4 w-4 text-accent" />
@@ -87,8 +100,8 @@ export function SideBarChat({ onSendMessage, isLoading = false, initialQuery }: 
                             {/* Message bubble */}
                             <div
                                 className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                                        ? "bg-accent text-white rounded-br-sm"
-                                        : "glass rounded-bl-sm text-white"
+                                    ? "bg-accent text-white rounded-br-sm"
+                                    : "glass rounded-bl-sm text-white"
                                     }`}
                             >
                                 {msg.text}

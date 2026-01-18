@@ -160,7 +160,8 @@ async def search(
             add_search_history(user_id, req.query)
             
         return {
-            "items": json.dumps(data, separators=(",", ":"))
+            "items": json.dumps(data, separators=(",", ":")),
+            "agent_response": res
         }
 
     except Exception as e:
