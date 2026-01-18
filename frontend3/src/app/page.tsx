@@ -76,7 +76,7 @@ export default function HomePage() {
     setCurrentQuery(query);
 
     // Retrieve products from backend
-    fetch(`${API_URL}/search`, {
+    fetch("http://localhost:8080/search", {
       method: "POST",
       headers: {
         'Content-Type': 'application/json'
@@ -86,27 +86,17 @@ export default function HomePage() {
       })
     })
       .then(res => res.json())
-      .then(data => {
-        if (data.agent_response) {
-          setLastAgentResponse(data.agent_response);
+      .then(data => JSON.parse(data.items).map((product: any): Product => {
+        return {
+          id: product["id"],
+          name: product["title"],
+          price: product["price"]/100,
+          image: product["image_url"],
+          store: product["url"],
+          deliveryTime: "3-5 days",
+          description: product["description"],
         }
-        return JSON.parse(data.items).map((product: any): Product => {
-          let domain = product["url"];
-          try {
-            domain = new URL(product["url"]).hostname.replace('www.', '');
-          } catch (e) { }
-
-          return {
-            id: product["id"],
-            name: product["title"],
-            price: (typeof product["price"] === 'number' ? product["price"] : parseFloat(product["price"])) / 100,
-            image: product["image_url"],
-            store: domain,
-            deliveryTime: "3-5 days",
-            description: product["description"],
-          }
-        })
-      })
+      }))
       .then(data => { setProducts(data) })
 
     // Mock: return random 4-6 products
