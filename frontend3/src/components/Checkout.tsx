@@ -122,12 +122,12 @@ export function OrderSuccess({ isOpen, onClose, checkouts }: OrderSuccessProps) 
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="flex flex-col items-center gap-6 py-8"
+                    className="flex flex-col items-center gap-4 py-6"
                 >
                     {/* Success Icon */}
                     <div className="relative">
-                        <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
-                            <CheckCircle2 className="h-12 w-12 text-primary" />
+                        <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
+                            <CheckCircle2 className="h-8 w-8 text-primary" />
                         </div>
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -135,7 +135,7 @@ export function OrderSuccess({ isOpen, onClose, checkouts }: OrderSuccessProps) 
                             transition={{ delay: 0.4 }}
                             className="absolute -top-2 -right-2"
                         >
-                            <Sparkles className="h-8 w-8 text-accent" />
+                            <Sparkles className="h-6 w-6 text-accent" />
                         </motion.div>
                     </div>
 
@@ -148,9 +148,9 @@ export function OrderSuccess({ isOpen, onClose, checkouts }: OrderSuccessProps) 
                     </div>
 
                     {/* Checkout Links */}
-                    <div className="w-full space-y-3 mt-2">
+                    <div className="w-full space-y-2 mt-2">
                         {checkouts.map((checkout, idx) => (
-                            <div key={idx} className="glass p-3 rounded-xl flex items-center justify-between">
+                            <div key={idx} className="glass p-2 rounded-lg flex items-center justify-between">
                                 <div className="text-left">
                                     <p className="text-sm font-medium text-white">{checkout.store}</p>
                                     <p className="text-xs text-muted-foreground">{checkout.item_count} items</p>
@@ -159,7 +159,7 @@ export function OrderSuccess({ isOpen, onClose, checkouts }: OrderSuccessProps) 
                                 {checkout.checkout_url && (
                                     <Button
                                         size="sm"
-                                        className="bg-primary text-xs"
+                                        className="bg-primary text-xs h-7 px-3"
                                         onClick={() => window.open(checkout.checkout_url, '_blank')}
                                     >
                                         Pay Now

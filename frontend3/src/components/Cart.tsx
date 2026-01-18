@@ -27,7 +27,7 @@ export function Cart({ isOpen, onClose, items, onRemoveItem, onCheckout }: CartP
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
             <SheetContent
-                className="w-full sm:max-w-md flex flex-col border-l border-white/10 bg-[#0a0a0f]/95 backdrop-blur-xl"
+                className="p-5 w-full sm:max-w-md flex flex-col border-l border-white/10 bg-[#0a0a0f]/95 backdrop-blur-xl"
             >
                 <SheetHeader className="border-b border-white/10 pb-4">
                     <SheetTitle className="flex items-center gap-3 text-white">
@@ -57,7 +57,7 @@ export function Cart({ isOpen, onClose, items, onRemoveItem, onCheckout }: CartP
                     <>
                         <ScrollArea className="flex-1 -mx-6 px-6 py-4">
                             <AnimatePresence>
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {items.map((item, index) => (
                                         <motion.div
                                             key={item.id}
@@ -65,9 +65,9 @@ export function Cart({ isOpen, onClose, items, onRemoveItem, onCheckout }: CartP
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, x: -20 }}
                                             transition={{ delay: index * 0.05 }}
-                                            className="flex gap-4 p-3 glass-card rounded-xl"
+                                            className="flex gap-4 p-4 glass-card rounded-xl"
                                         >
-                                            <div className="relative h-20 w-20 rounded-lg overflow-hidden flex-shrink-0">
+                                            <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
                                                     src={item.image}
                                                     alt={item.name}
