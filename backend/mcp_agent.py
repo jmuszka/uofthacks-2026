@@ -325,7 +325,7 @@ class MCPLangGraphAgent:
             "1. If the user asks for a product, usage `search_global_products`.\n"
             "2. Once you get the search results, DO NOT SEARCH AGAIN. Format the REAL results into a JSON list.\n"
             "3. DO NOT HALLUCINATE. Use ONLY the data returned by the tool. If no results, return an empty list [].\n"
-            "4. The JSON list must contain objects with keys: 'title', 'price', 'description', 'url', 'id'.\n"
+            "4. The JSON list must contain objects with keys: 'title', 'price', 'description', 'url', 'id', 'image_url'.\n"
             "   - 'id' should be the product's global ID (e.g. gid://shopify/Product/...) or the ID of its first variant.\n"
             "5. Output ONLY the JSON. Do not add conversational text."
             "Use the following schema:"
