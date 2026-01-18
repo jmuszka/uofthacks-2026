@@ -1,6 +1,6 @@
-from enum import Enum 
+from enum import IntEnum 
 
-class SortBy(Enum):
+class SortBy(IntEnum):
     RELEVANCE = 1
     PRICE = 2
     RATING = 3

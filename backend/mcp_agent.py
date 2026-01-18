@@ -35,7 +35,6 @@ class AgentState(TypedDict):
 class MCPLangGraphAgent:
     """
     A LangGraph agent that integrates with MCP servers via the MCPMultiClient.
-    Uses OpenAI's GPT-4o model for reasoning.
     """
 
     def __init__(self, config_path: str = "servers_config.json"):
@@ -60,11 +59,11 @@ class MCPLangGraphAgent:
         # Convert MCP tools to LangChain tools
         await self._create_langchain_tools()
 
-        # Initialize Gemini via native Google integration
-        # Initialize OpenAI (GPT-4o)
+        # Initialize Cerebras (via OpenAI compatible interface)
         self.model = ChatOpenAI(
-            model="gpt-4o",
-            api_key=os.getenv("OPENAI_API_KEY"),
+            model="llama-3.3-70b",
+            base_url="https://api.cerebras.ai/v1",
+            api_key=os.getenv("CEREBRAS_API_KEY"),
             temperature=0,
         )
 
@@ -118,7 +117,7 @@ class MCPLangGraphAgent:
                         
                         # Execute tool
                         result = await self.mcp_client.call_tool(name, final_args)
-                        
+
                         # Handle result content
                         if hasattr(result, 'content'):
                             contents = []
@@ -234,8 +233,36 @@ class MCPLangGraphAgent:
         # Define the agent node
         async def agent_node(state: AgentState) -> dict:
             """The agent decides what to do based on the current state."""
+            import json
+            import uuid
+            
             messages = state["messages"]
             response = await self.model.ainvoke(messages)
+            
+            # --- CEREBRAS/LLAMA COMPATIBILITY PATCH ---
+            if not response.tool_calls and response.content:
+                content = response.content.strip()
+                if content.startswith('{"type": "function"') and "parameters" in content:
+                    try:
+                        data = json.loads(content)
+                        if data.get("type") == "function":
+                            tool_name = data.get("name")
+                            tool_args = data.get("parameters", {})
+                            
+                            # Create a valid LangChain ToolCall
+                            tool_call = {
+                                "name": tool_name,
+                                "args": tool_args,
+                                "id": f"call_{uuid.uuid4().hex[:8]}"
+                            }
+                            
+                            # Inject into message
+                            response.tool_calls = [tool_call]
+                            response.content = "" 
+                    except Exception:
+                        pass # Ignore parsing errors on best-effort basis
+            # ------------------------------------------
+
             return {"messages": [response]}
 
         # Define the should_continue function
@@ -294,10 +321,15 @@ class MCPLangGraphAgent:
         config = {"configurable": {"thread_id": thread_id}}
         
         system_prompt = (
-            "You are a precise product search assistant. "
-            "List items with their price, description, features, and website link. "
-            "Do not add any conversational filler, greetings, or conclusions. "
-            "Output STRICTLY the list."
+            "You are a helpful shopping assistant with access to Shopify's global product catalog. "
+            "\n\n"
+            "PROTOCOL:\n"
+            "1. If the user asks for a product, usage `search_global_products`.\n"
+            "2. Once you get the search results, DO NOT SEARCH AGAIN. Format the REAL results into a JSON list.\n"
+            "3. DO NOT HALLUCINATE. Use ONLY the data returned by the tool. If no results, return an empty list [].\n"
+            "4. The JSON list must contain objects with keys: 'title', 'price', 'description', 'url', 'id'.\n"
+            "   - 'id' should be the product's global ID (e.g. gid://shopify/Product/...) or the ID of its first variant.\n"
+            "5. Output ONLY the JSON. Do not add conversational text."
         )
         
         result = await self.graph.ainvoke(
