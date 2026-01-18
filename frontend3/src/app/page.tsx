@@ -81,8 +81,7 @@ export default function HomePage() {
       })
     })
     .then(res => res.json())
-    .then(data => {console.log(JSON.parse(data.items))})
-    .then(data => data["items"].map((product): Product => {
+    .then(data => JSON.parse(data.items).map((product): Product => {
       return {
         id: crypto.randomUUID(),
         name: product["name"],

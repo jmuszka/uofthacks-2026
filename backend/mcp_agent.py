@@ -68,7 +68,7 @@ class MCPLangGraphAgent:
             model="llama-3.1-8b-instant",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0,
-            max_tokens=1024,
+            max_tokens=10000,
         )
         # Bind tools to the model
         if self.tools:
@@ -329,7 +329,8 @@ class MCPLangGraphAgent:
             "   - 'id' should be the product's global ID (e.g. gid://shopify/Product/...) or the ID of its first variant.\n"
             "5. Output ONLY the JSON. Do not add conversational text."
             "Use the following schema:"
-            "{items: {title, price, description, url, id,}[]}"
+            "{items: {title, price, description, url, id, image_url}[]}"
+            "**DO NOT INCLUDE CONVERSATIONAL TEXT, ONLY INCLUDE THE JSON**"
         )
        
         print("INVOKING")
