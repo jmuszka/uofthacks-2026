@@ -137,3 +137,95 @@ Size: {profile['sizes']['clothing']}
 
 enhanced_query = f"{user_query}\n\nUser Profile:\n{context}"
 ```
+
+---
+
+## API Integration
+
+The backend exposes REST endpoints for profile management via `profile_router.py`.
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/profile` | Create or update user profile (upsert) |
+| `GET` | `/profile/{user_id}` | Retrieve user profile |
+| `DELETE` | `/profile/{user_id}` | Delete user profile |
+| `GET` | `/profile` | List all profiles (admin/debug) |
+| `GET` | `/profile/{user_id}/context` | Get personalization context string |
+
+### Create/Update Profile
+
+```bash
+curl -X POST http://localhost:8080/profile \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "supabase-uuid-abc123",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "photo": null,
+    "sizes": {
+      "clothing": "M",
+      "waist": "32",
+      "shoe": "10.5",
+      "fit": "Regular"
+    },
+    "style": ["streetwear", "minimalist"],
+    "customStyle": "techwear",
+    "values": ["eco-friendly"],
+    "customValue": "small business",
+    "budget": 50,
+    "zipCode": "90210"
+  }'
+```
+
+### Get Profile
+
+```bash
+curl http://localhost:8080/profile/supabase-uuid-abc123
+```
+
+### Get Personalization Context
+
+Returns the context string injected into search queries:
+
+```bash
+curl http://localhost:8080/profile/supabase-uuid-abc123/context
+```
+
+Response:
+```json
+{
+  "success": true,
+  "context": "Style preferences: streetwear, minimalist, techwear\nValues: eco-friendly, small business\nBudget tier: mid-range\nClothing size: M, Shoe size: 10.5\nLocation: 90210"
+}
+```
+
+---
+
+## File Structure
+
+```
+backend/
+├── database.py        # MongoDB connection & CRUD operations
+├── models.py          # Pydantic schemas for UserProfile, SearchHistory
+├── profile_router.py  # FastAPI router with /profile endpoints
+├── init_db.py         # Run once to create collections & indexes
+└── dto/
+    └── profile.py     # Request/response DTOs for API
+```
+
+---
+
+## Database Initialization
+
+Run once to set up MongoDB collections and indexes:
+
+```bash
+cd backend
+python init_db.py
+```
+
+This creates:
+- `user_profiles` collection with unique index on `user_id`
+- `search_history` collection with compound index on `user_id` + `timestamp`
