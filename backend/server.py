@@ -78,6 +78,7 @@ app = FastAPI(lifespan=lifespan)
 origins = [
     "http://localhost:3000", # Your React/Vue/Svelte dev server
     "http://127.0.0.1:3000",
+    "*",
 ]
 
 app.add_middleware(
@@ -88,11 +89,15 @@ app.add_middleware(
     allow_headers=["*"],         # Allow all headers
 )
 
-class CheckoutRequest(BaseModel):
+
+class CheckoutItem(BaseModel):
     variant_id: str | int
     quantity: int = 1
     store_domain: str
     access_token: str | None = None
+
+class CheckoutRequest(BaseModel):
+    items: list[CheckoutItem]
 
 # Accessor for the eagerly initialized agent
 async def get_agent():
@@ -280,66 +285,89 @@ def resolve_variant_id(store_domain: str, access_token: str, input_id: str | int
 
 @app.post("/checkout")
 async def create_checkout(request: CheckoutRequest):
-    store_domain = request.store_domain
-    access_token = request.access_token
+    # Group items by store_domain
+    items_by_store = {}
+    for item in request.items:
+        if item.store_domain not in items_by_store:
+            items_by_store[item.store_domain] = []
+        items_by_store[item.store_domain].append(item)
     
-    # Auto-discovery if token not provided (needed early for resolution)
-    if not access_token:
-        access_token = find_storefront_token(store_domain)
+    checkouts = []
 
-    # Resolve all items to valid Variant IDs
-    line_items = []
-    # Handle single item request structure (backwards compatibility shim if needed, 
-    # but based on previous step we returned to single item structure in CheckoutRequest)
-    # Wait, the prompt reverted to single item.
-    
-    # Resolving the single variant_id from request
-    final_variant_id = resolve_variant_id(store_domain, access_token, request.variant_id)
-    
-    line_items = [{'quantity': request.quantity, 'merchandiseId': final_variant_id}]
+    for store_domain, items in items_by_store.items():
+        try:
+            # 1. Get Access Token (use the first one found or discover it)
+            access_token = next((i.access_token for i in items if i.access_token), None)
+            
+            if not access_token:
+                access_token = find_storefront_token(store_domain)
+            
+            # 2. Resolve all variant IDs for this store
+            line_items = []
+            for item in items:
+                final_variant_id = resolve_variant_id(store_domain, access_token, item.variant_id)
+                if final_variant_id:
+                     line_items.append({'quantity': item.quantity, 'merchandiseId': final_variant_id})
+            
+            if not line_items:
+                print(f"⚠️ No valid items for store {store_domain}, skipping.")
+                continue
 
-    query = """
-    mutation($lines: [CartLineInput!]!) {
-      cartCreate(input: { lines: $lines }) {
-        cart { checkoutUrl }
-        userErrors { field message }
-      }
-    }
-    """
-    
-    try:
-        if not store_domain.startswith("http"):
-             api_url = f"https://{store_domain}/api/2025-01/graphql.json"
-        else:
-             api_url = f"{store_domain.rstrip('/')}/api/2025-01/graphql.json"
-
-        response = requests.post(
-            api_url,
-            json={
-                'query': query, 
-                'variables': {
-                    'lines': line_items
-                }
-            },
-            headers={
-                'X-Shopify-Storefront-Access-Token': access_token,
-                'Content-Type': 'application/json'
+            # 3. Create Cart
+            query = """
+            mutation($lines: [CartLineInput!]!) {
+              cartCreate(input: { lines: $lines }) {
+                cart { checkoutUrl }
+                userErrors { field message }
+              }
             }
-        )
-        
-        data = response.json()
-        
-        if 'errors' in data:
-            raise HTTPException(status_code=500, detail=f"GraphQL Error: {data['errors']}")
+            """
             
-        cart_data = data['data']['cartCreate']
-        if cart_data['userErrors']:
-            raise HTTPException(status_code=400, detail=f"User Error: {cart_data['userErrors'][0]['message']}")
-            
-        return {"checkout_url": cart_data['cart']['checkoutUrl'], "used_token": access_token}
+            if not store_domain.startswith("http"):
+                 api_url = f"https://{store_domain}/api/2025-01/graphql.json"
+            else:
+                 api_url = f"{store_domain.rstrip('/')}/api/2025-01/graphql.json"
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            response = requests.post(
+                api_url,
+                json={
+                    'query': query, 
+                    'variables': {
+                        'lines': line_items
+                    }
+                },
+                headers={
+                    'X-Shopify-Storefront-Access-Token': access_token,
+                    'Content-Type': 'application/json'
+                }
+            )
+            
+            data = response.json()
+            
+            if 'errors' in data:
+                print(f"❌ GraphQL Error for {store_domain}: {data['errors']}")
+                checkouts.append({"store": store_domain, "error": str(data['errors'])})
+                continue
+                
+            cart_data = data['data']['cartCreate']
+            if cart_data['userErrors']:
+                 msg = cart_data['userErrors'][0]['message']
+                 print(f"❌ User Error for {store_domain}: {msg}")
+                 checkouts.append({"store": store_domain, "error": msg})
+                 continue
+                
+            checkouts.append({
+                "store": store_domain,
+                "checkout_url": cart_data['cart']['checkoutUrl'],
+                "item_count": len(line_items)
+            })
+
+        except Exception as e:
+            print(f"❌ Error processing checkout for {store_domain}: {e}")
+            checkouts.append({"store": store_domain, "error": str(e)})
+
+    return {"checkouts": checkouts}
+
 
 if __name__ == "__main__":
     import uvicorn
