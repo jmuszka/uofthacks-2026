@@ -60,7 +60,7 @@ export default function HomePage() {
       return {
         id: crypto.randomUUID(),
         name: product["name"],
-        price: Number(product["price"]),
+        price: product["price"],
         image: "url",
         store: product["link"],
         deliveryTime: "unknown",
