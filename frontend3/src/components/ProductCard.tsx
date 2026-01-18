@@ -50,7 +50,7 @@ export function ProductCard({ product, isSelected, onToggle }: ProductCardProps)
                 {/* Price badge */}
                 <div className="absolute bottom-3 right-3">
                     <span className="glass px-3 py-1 rounded-full text-lg font-bold text-primary">
-                        {product.price}
+                        ${product.price.toFixed(2)}
                     </span>
                 </div>
             </div>

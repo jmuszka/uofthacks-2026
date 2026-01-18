@@ -88,7 +88,7 @@ export default function HomePage() {
         return {
           id: product["id"],
           name: product["title"],
-          price: product["price"],
+          price: product["price"]/100,
           image: product["image_url"],
           store: product["url"],
           deliveryTime: "3-5 days",
